@@ -34,19 +34,19 @@ LitElement is another dependency, some will even say "another framework". But I 
 This is indirectly related to the topic of the article, but lit-html in its ~ 3.5kB contains a very convenient ability to describe the interface using functions. Moreover, the update of the DOM structures of such component functions is optimized: only those blocks are rendered, the values of which have changed since the previous render. In some cases and with due resourcefulness, the entire interface can be described only with functions, decorators and directives (about them a little later):
 
 ```Javascript
-import {html, render} from 'lit-html'
+import { html, render } from 'lit-html'
 
-const ui = data => html` ... $ {data} ... `
+const ui = data => html`...${data}...`
 
-render (ui ('Hello!'), document.body)
+render(ui('Hello!'), document.body)
 ```
 
 Moreover, in some templates, you can use others:
-```Javascript
-const myHeader = html` <h1> Header </h1> `
+```Javascript 
+const myHeader = html`<h1>Header</h1>`
 const myPage = html`
-  $ {myHeader}
-  <div> Here's my main page. </div>
+  ${myHeader}
+  <div>Here's my main page.</div>
 `
 ```
 
@@ -55,15 +55,15 @@ In other cases, you can come up with a wrapper to create custom elements from su
 const defineFxComponent = (tagName, FxComponent, Parent = LitElement) => {
   const Component = class extends Parent {
     render() {
-      return FxComponent (this.data)
+      return FxComponent(this.data)
     }
   }
-  customElements.define (tagName, Component)
+  customElements.define(tagName, Component)
 }
 
-defineFxComponent ('custom-ui', ui)
+defineFxComponent('custom-ui', ui)
 
-render (html` <custom-ui .data = "Hello!"> </custom-ui> `, document.body)
+render(html`<custom-ui .data="Hello!"></custom-ui>`, document.body)
 ```
 
 I will not dwell on the conveniences of templating, styling, passing attributes, data binding and subscribing to events, conditional and looping when working with lit-html. All of this is detailed in the [documentation](https://lit-html.polymer-project.org/guide/writing-templates). I will focus on what can be missed by a cursory glance at the manual, but can be useful.
@@ -87,10 +87,10 @@ The directive stores the value `value` - this is what was displayed in its place
 
 An example of a custom directive (which has access to the NodePart class - for displaying content) that stores and displays the number of renders:
 ```Javascript
-import {directive} from 'lit-html'
+import { directive } from 'lit-html'
 
-const renderCounter = directive (() => part =>
-  part.setValue (part.value === undefined? 0: part.value + 1)
+const renderCounter = directive(() => part =>
+  part.setValue(part.value === undefined ? 0 : part.value + 1)
 )
 ```
 
@@ -112,54 +112,54 @@ HOC is a powerful pattern often used when working with React or Vue. When using 
 In the project I needed redux, so let's take a look at [the connector for it](https://github.com/realiarthur/lite-redux) as an example. Below is the code for a decorator that takes a store and returns a standard redux connector. Inside the class, mapStateToProps are accumulated from the entire inheritance chain (for those cases if it contains a HOC that also communicates with redux), so that later, when the component is embedded in the DOM, one callback subscribes them all to change the redux state. When a component is removed from the DOM, this subscription is removed.
 
 ```Javascript
-import {bindActionCreators} from 'redux'
+import { bindActionCreators } from 'redux'
 
 export default store => (mapStateToProps, mapDispatchToProps) => Component =>
   class Connect extends Component {
-    constructor (props) {
-      super (props)
-      this._getPropsFromStore = this._getPropsFromStore.bind (this)
-      this._getInheritChainProps = this._getInheritChainProps.bind (this)
+    constructor(props) {
+      super(props)
+      this._getPropsFromStore = this._getPropsFromStore.bind(this)
+      this._getInheritChainProps = this._getInheritChainProps.bind(this)
 
       // Accumulation mapStateToProps
-      this._inheritChainProps = (this._inheritChainProps || []). concat (
+      this._inheritChainProps = (this._inheritChainProps || []).concat(
         mapStateToProps
       )
     }
 
     // Function for getting data from store
-    _getPropsFromStore (mapStateToProps) {
+    _getPropsFromStore(mapStateToProps) {
       if (!mapStateToProps) return
       const state = store.getState()
-      const props = mapStateToProps (state)
+      const props = mapStateToProps(state)
 
       for (const prop in props) {
-        this [prop] = props [prop]
+        this[prop] = props[prop]
       }
     }
 
     // Callback to subscribe to the store change, which will call all mapStateToProps from the inheritance chain
     _getInheritChainProps() {
-      this._inheritChainProps.forEach (i => this._getPropsFromStore (i))
+      this._inheritChainProps.forEach(i => this._getPropsFromStore(i))
     }
 
     connectedCallback() {
-      this._getPropsFromStore (mapStateToProps)
+      this._getPropsFromStore(mapStateToProps)
 
-      this._unsubscriber = store.subscribe (this._getInheritChainProps)
+      this._unsubscriber = store.subscribe(this._getInheritChainProps)
 
       if (mapDispatchToProps) {
         const dispatchers =
           typeof mapDispatchToProps === 'function'
-            ? mapDispatchToProps (store.dispatch)
+            ? mapDispatchToProps(store.dispatch)
             : mapDispatchToProps
         for (const dispatcher in dispatchers) {
           typeof mapDispatchToProps === 'function'
-            ? (this [dispatcher] = dispatchers [dispatcher])
-            : (this [dispatcher] = bindActionCreators (
-                dispatchers [dispatcher],
+            ? (this[dispatcher] = dispatchers[dispatcher])
+            : (this[dispatcher] = bindActionCreators(
+                dispatchers[dispatcher],
                 store.dispatch,
-               () => store.getState()
+                () => store.getState()
               ))
         }
       }
@@ -177,29 +177,30 @@ export default store => (mapStateToProps, mapDispatchToProps) => Component =>
 
 The most convenient way to use this method when initializing store is to create and export a regular connector that can be used as a higher-order component:
 
+
 ```Javascript
 // store.js
-import {createStore} from 'redux'
+import { createStore } from 'redux'
 import makeConnect from 'lite-redux'
 import reducer from './reducer'
 
-const store = createStore (reducer)
+const store = createStore(reducer)
 
 export default store
 
 // Create a standard connector
-export const connect = makeConnect (store)
+export const connect = makeConnect(store)
 ```
 
 ```Javascript
 // Component.js
-import {connect} from './store'
+import { connect } from './store'
 
 class Component extends WhatEver {
   /* ... */
 }
 
-export default connect (mapStateToProps, mapDispatchToProps) (Component)
+export default connect(mapStateToProps, mapDispatchToProps)(Component)
 ```
 
 ### Extending Display and Observable Properties
@@ -210,37 +211,37 @@ const withPassword = Component =>
   class PasswordInput extends Component {
     static get properties() {
       return {
-        // Assume super.properties already contains type property
-        ... super.properties,
-        addonIcon: {type: String}
+         // Assume super.properties already contains type property
+        ...super.properties,
+        addonIcon: { type: String }
       }
     }
 
-    constructor (props) {
-      super (props)
+    constructor(props) {
+      super(props)
       this.type = 'password'
       this.addonIcon = 'invisible'
     }
 
-    setType (e) {
-      this.type = this.type === 'text'? 'password': 'text'
-      this.addonIcon = this.type === 'password'? 'invisible': 'visible'
+    setType(e) {
+      this.type = this.type === 'text' ? 'password' : 'text'
+      this.addonIcon = this.type === 'password' ? 'invisible' : 'visible'
     }
 
     render() {
       return html`
-        <div class = "with-addon">
-          <! - Extendable class display ->
-          $ {super.render()}
-          <div @click = $ {this.setType}>
-            <custom-icon icon = $ {this.addonIcon}> </custom-icon>
+        <div class="with-addon">
+          <!-- Отображение расширяемого класса -->
+          ${super.render()}
+          <div @click=${this.setType}>
+            <custom-icon icon=${this.addonIcon}></custom-icon>
           </div>
         </div>
       `
     }
   }
 
-customElements.define ('password-input', withPassword (TextInput))
+customElements.define('password-input', withPassword(TextInput))
 ```
 
 Here I would like to draw your attention to the `... super.properties` line in the` get properties() `method, which allows you not to define the properties already described in the extensible component. And to the `super.render()` line in the `render` method, which displays the display of the extensible component at the specified place in the markup.
@@ -266,15 +267,15 @@ The solution was to pass the template as a property for the custom form. This is
 
 ```Javascript
 // Form component
-import {LitElement, html} from 'lit-element'
+import { LitElement, html } from 'lit-element'
 
 class LiteForm extends LitElement {
-  /* ... form functionality ... */
+  /* ...функционал формы ... */
 
   render() {
-    return html` <form @submit = $ {this.handleSubmit} method = $ {this.method}>
-      $ {this.formTemplate (this)}
-    </form> `
+    return html`<form @submit=${this.handleSubmit} method=${this.method}>
+      ${this.formTemplate(this)}
+    </form>`
   }
 }
 
@@ -282,31 +283,31 @@ customElements.define ('lite-form', LiteForm)
 ```
 
 ```Javascript
-// Sample form
-import {html, render} from 'lit-element'
+// Form example
+import { html, render } from 'lit-element'
 
-const formTemplate = ({values, handleBlur, handleChange, ... props}) =>
-  html` <input
-      .value = $ {values.firstName}
-      @input = $ {handleChange}
-      @blur = $ {handleBlur}
+const formTemplate = ({ values, handleBlur, handleChange, ...props }) =>
+  html`<input
+      .value=${values.firstName}
+      @input=${handleChange}
+      @blur=${handleBlur}
     />
     <input
-      .value = $ {values.lastName}
-      @input = $ {handleChange}
-      @blur = $ {handleBlur}
+      .value=${values.lastName}
+      @input=${handleChange}
+      @blur=${handleBlur}
     />
-    <button type = "submit"> Submit </button> `
+    <button type="submit">Submit</button>`
 
-const MyForm = html` <lite-form
-  method = "POST"
-  .formTemplate = $ {formTemplate}
-  .onSubmit = $ {{/*...*/}}
-  .initialValues ​​= $ {{/*...*/}}
-  .validationSchema = $ {{/*...*/}}
-> </lite-form> `
+const MyForm = html`<lite-form
+  method="POST"
+  .formTemplate=${formTemplate}
+  .onSubmit=${{/*...*/}}
+  .initialValues=${{/*...*/}}
+  .validationSchema=${{/*...*/}}
+></lite-form>`
 
-render (html` $ {MyForm} `, document.getElementById ('root'))
+render(html`${MyForm}`, document.getElementById('root'))
 ```
 
 Of course, I didn't want each input field to pass properties and events on the form. I also wanted to work with custom input fields and make it easier to output errors. Therefore, I needed several higher-order components to work with the form, such as `withField` or` withError`.
@@ -316,12 +317,12 @@ This implementation required the HOCs to be able to independently find their for
 ```Javascript
 // here the IS_LITE_FORM constant is the name of the boolean attribute that each element of the custom form has
 const getFormClass = element => {
-  const form = element.closest (`[$ {IS_LITE_FORM}]`)
+  const form = element.closest(`[${IS_LITE_FORM}]`)
   if (form) return form
 
-  const host = element.getRootNode(). host
-  if (! host) throw new Error ('Lite-form not found')
-  return host [IS_LITE_FORM]? host: getFormClass (host)
+  const host = element.getRootNode().host
+  if (!host) throw new Error('Lite-form not found')
+  return host[IS_LITE_FORM] ? host : getFormClass(host)
 }
 ```
 Everything is trivial here: recursive search for an element with an attribute indicating that this is the desired form. I would like to note the function [getRootNode](https://developer.mozilla.org/en-US/docs/Web/API/Node/getRootNode), thanks to which the search passes through the tree of nested Shadow DOMs - a necessary function when solving such specific problems.
@@ -329,9 +330,9 @@ Everything is trivial here: recursive search for an element with an attribute in
 Using `withField`, I could greatly simplify the form template:
 ```Javascript
 const formTemplate = props =>
-  html` <custom-input name = "firstName"> </custom-input>
-    <custom-input name = "lastName"> </custom-input>
-    <button type = "submit"> Submit </button> `
+  html`<custom-input name="firstName"></custom-input>
+    <custom-input name="lastName"></custom-input>
+    <button type="submit">Submit</button>`
 ```
 
 In general, everything worked fine, but ... Before I tell you why I abandoned Shadow DOM, a few more words about it.
@@ -339,11 +340,11 @@ In general, everything worked fine, but ... Before I tell you why I abandoned Sh
 ### Styling Shadow DOM externally and pseudo-classes: host and: host-context
 You can use CSS variables to customize component styles from the main document. They go through the Shadow DOM, are visible everywhere, and that's quite handy. But situations arise when this is not enough, for example, when conditional styling is necessary:
 ```css
-:host ([rtl]) {
+:host([rtl]) {
   text-align: right;
 }
 
-:host-context (body [dir = 'rtl']) .text {
+:host-context(body[dir='rtl']) .text {
   text-align: right;
 }
 ```
@@ -377,34 +378,34 @@ After abandoning the Shadow DOM, it seemed to me a good idea to extend the built
 // Form component
 class LiteForm extends HTMLFormElement {
   connectedCallback() {
-    this.addEventListener ('submit', this.handleSubmit)
+    this.addEventListener('submit', this.handleSubmit)
   }
 
   disconnectedCallback() {
-    this.removeEventListener ('submit', this.handleSubmit)
+    this.removeEventListener('submit', this.handleSubmit)
   }
 
-  /* ... form functionality ... */
+  /* ...функционал формы ... */
 }
 
-customElements.define ('lite-form', LiteForm, {extends: 'form'})
+customElements.define('lite-form', LiteForm, { extends: 'form' })
 ```
 Everything worked as in the usual form, only with additional functionality:
 ```Javascript
-// Sample form
-const MyForm = html` <form
-  method = "POST"
-  is = "lite-form"
-  .onSubmit = $ {{...}}
-  .initialValues ​​= $ {{...}}
-  .validationSchema = $ {{...}}
+// Form example
+const MyForm = html`<form
+  method="POST"
+  is="lite-form"
+  .onSubmit=${{...}}
+  .initialValues=${{...}}
+  .validationSchema=${{...}}
 >
-  <custom-input name = "firstName"> </custom-input>
-  <custom-input name = "lastName"> </custom-input>
-  <button type = "submit"> Submit </button>
-</form> `
+  <custom-input name="firstName"></custom-input>
+  <custom-input name="lastName"></custom-input>
+  <button type="submit">Submit</button>
+</form>`
 
-render (html` $ {MyForm} `, document.getElementById ('root'))
+render(html`${MyForm}`, document.getElementById('root'))
 ```
 Here I would like to draw attention to the first argument in the `customElements.define` function and the` is` attribute in the form element, which indicate what "type" the tag will be. And also on the third argument in `customElements.define`, which specifies which tag will be expanded.
 
@@ -413,23 +414,23 @@ Everything worked great and looked great. But not in all browsers: Safari does n
 ### Version 3. Higher-order component
 After a couple of unsuccessful attempts to wrap the functionality of the form, I decided to leave it outside of it and make a higher-order component to wrap everything I needed. This required some small code changes:
 ```Javascript
-// Higher-order component of the form
+// Form Higher-order component
 export const withForm = ({
   onSubmit,
   initialValues,
   validationSchema,
-  ... config
+  ...config
 } = {}) => Component =>
   class LiteForm extends Component {
     connectedCallback() {
-      this._onSubmit = (onSubmit || this.onSubmit || function() {}). bind (this)
-      this._initialValues ​​= initialValues ​​|| this.initialValues ​​|| {}
+      this._onSubmit = (onSubmit || this.onSubmit || function () {}).bind(this)
+      this._initialValues = initialValues || this.initialValues || {}
       this._validationSchema = validationSchema || this.validationSchema || {}
       /* ... */
       super.connectedCallback && super.connectedCallback()
     }
 
-    /* ... form functionality ... */
+    /* ...form functionality ... */
   }
 ```
 
@@ -438,62 +439,62 @@ Here, in the `connectedCallback()` function, the form accepts a config (onSubmit
 ```Javascript
 // An example of a base class from the first implementation of the form:
 // Standard web component or LitElement
-import {withForm} from 'lite-form'
+import { withForm } from 'lite-form'
 
 class LiteForm extends LitElement {
   render() {
-    return html` <form @submit = $ {this.handleSubmit} method = $ {this.method}>
-      $ {this.formRender (this)}
-    </form> `
+    return html`<form @submit=${this.handleSubmit} method=${this.method}>
+      ${this.formRender(this)}
+    </form>`
   }
 }
 
-customElements.define ('lite-form', withForm (LiteForm))
+customElements.define('lite-form', withForm(LiteForm))
 ```
 
 ```Javascript
 // An example of a base class from the second implementation of the form:
 // Extend the inline element
-import {withForm} from 'lite-form'
+import { withForm } from 'lite-form'
 
 class LiteForm extends HTMLFormElement {
   connectedCallback() {
-    this.addEventListener ('submit', this.handleSubmit)
+    this.addEventListener('submit', this.handleSubmit)
   }
 
   disconnectedCallback() {
-    this.removeEventListener ('submit', this.handleSubmit)
+    this.removeEventListener('submit', this.handleSubmit)
   }
 }
 
-customElements.define ('lite-form', withForm (LiteForm), {extends: 'form'})
+customElements.define('lite-form', withForm(LiteForm), { extends: 'form' })
 ```
 
 On the other hand, you can not create the base class of the form, but wrap the final components containing form templates in `withForm()` and pass the config to the HOC:
 
 ```Javascript
-// Sample form
-import {withForm} from 'lite-form'
+// Form example
+import { withForm } from 'lite-form'
 
 class UserForm extends LitElement {
   render() {
     return html`
-      <form method = "POST" @submit = $ {this.handleSubmit}>
-        <custom-input name = "firstName"> </custom-input>
-        <custom-input name = "lastName"> </custom-input>
-        <button type = "submit"> Submit </button>
+      <form method="POST" @submit=${this.handleSubmit}>
+        <custom-input name="firstName"></custom-input>
+        <custom-input name="lastName"></custom-input>
+        <button type="submit">Submit</button>
       </form>
     `
   }
 }
 
-const enhance = withForm ({
+const enhance = withForm({
   initialValues: {/*...*/},
   onSubmit: {/*...*/},
   validationSchema: {/*...*/}
 })
 
-customElements.define ('user-form', enhance (UserForm))
+customElements.define('user-form', enhance(UserForm))
 ```
 Extensible classes can both use the Shadow DOM and remain public and better respond to the specifics of the project. The complete code of the form component with examples can be found [see here](https://github.com/realiarthur/lite-form).
 
